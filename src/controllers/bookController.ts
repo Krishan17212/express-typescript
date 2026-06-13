@@ -20,7 +20,12 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     const finalTitle = Array.isArray(title) ? title[0] : title;
     const finalGenre = Array.isArray(genre) ? genre[0] : genre;
 
-    if (!finalTitle || typeof finalTitle !== "string" || !finalGenre || typeof finalGenre !== "string") {
+    if (
+      !finalTitle ||
+      typeof finalTitle !== "string" ||
+      !finalGenre ||
+      typeof finalGenre !== "string"
+    ) {
       const error = createHttpError(
         400,
         "Title and genre are required and must be valid strings",
@@ -107,13 +112,17 @@ const getCloudinaryPublicId = (url: string, isRaw = false) => {
     return publicIdWithExt;
   } else {
     const extIndex = publicIdWithExt.lastIndexOf(".");
-    return extIndex === -1 ? publicIdWithExt : publicIdWithExt.substring(0, extIndex);
+    return extIndex === -1
+      ? publicIdWithExt
+      : publicIdWithExt.substring(0, extIndex);
   }
 };
 
 const updateBook = async (req: Request, res: Response, next: NextFunction) => {
   const { bookId } = req.params;
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const files = req.files as
+    | { [fieldname: string]: Express.Multer.File[] }
+    | undefined;
   const coverImageFile = files?.coverImage?.[0];
   const bookFile = files?.file?.[0];
 
@@ -128,7 +137,10 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
     // 2. Check authorization (only the author can update their book)
     const userId = req.userId;
     if (book.author.toString() !== userId) {
-      const error = createHttpError(403, "You are not authorized to update this book");
+      const error = createHttpError(
+        403,
+        "You are not authorized to update this book",
+      );
       return next(error);
     }
 
@@ -166,7 +178,7 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
       // Upload new cover image
       const coverImageUploadResult = await cloudinary.uploader.upload(
         coverImageFile.path,
-        coverImageOptions
+        coverImageOptions,
       );
       updateData.coverImage = coverImageUploadResult.secure_url;
 
@@ -184,21 +196,26 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
     // 6. Handle optional book file update
     if (bookFile) {
       // Upload new book file
-      const bookFileUploadResult = await cloudinary.uploader.upload(bookFile.path, {
-        filename_override: bookFile.filename,
-        folder: "book-pdfs",
-        asset_folder: "book-pdfs",
-        resource_type: "raw",
-      });
+      const bookFileUploadResult = await cloudinary.uploader.upload(
+        bookFile.path,
+        {
+          filename_override: bookFile.filename,
+          folder: "book-pdfs",
+          asset_folder: "book-pdfs",
+          resource_type: "raw",
+        },
+      );
       updateData.file = bookFileUploadResult.secure_url;
 
       // Delete old book file from Cloudinary
       if (book.file) {
         const oldPublicId = getCloudinaryPublicId(book.file, true);
         if (oldPublicId) {
-          await cloudinary.uploader.destroy(oldPublicId, { resource_type: "raw" }).catch((err) => {
-            console.error("Failed to delete old book file:", err);
-          });
+          await cloudinary.uploader
+            .destroy(oldPublicId, { resource_type: "raw" })
+            .catch((err) => {
+              console.error("Failed to delete old book file:", err);
+            });
         }
       }
     }
@@ -207,7 +224,7 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
     const updatedBook = await BookModel.findByIdAndUpdate(
       bookId,
       updateData,
-      { new: true } // Return the updated document
+      { new: true }, // Return the updated document
     );
 
     // 8. Clean up local files
@@ -235,4 +252,31 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createBook, updateBook };
+const listBook = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const book = await BookModel.find();
+    res.status(200).json({
+      success: true,
+      message: "Book fetched successfully",
+      data: book,
+    });
+  } catch (error: any) {
+    next(createHttpError(500, error?.message));
+  }
+};
+
+const singleBook = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { bookId } = req.params;
+    const book = await BookModel.findById(bookId);
+    res.status(200).json({
+      success: true,
+      message: "Book fetched successfully",
+      data: book,
+    });
+  } catch (error: any) {
+    next(createHttpError(500, error?.message));
+  }
+};
+
+export { createBook, updateBook, listBook, singleBook };
