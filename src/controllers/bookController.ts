@@ -279,4 +279,60 @@ const singleBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createBook, updateBook, listBook, singleBook };
+const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { bookId } = req.params;
+
+    // 1. Check if the book exists
+    const book = await BookModel.findById(bookId);
+    if (!book) {
+      const error = createHttpError(404, "Book not found");
+      return next(error);
+    }
+
+    // 2. Check authorization
+    const userId = req.userId;
+    if (book.author.toString() !== userId) {
+      const error = createHttpError(
+        403,
+        "You are not authorized to delete this book",
+      );
+      return next(error);
+    }
+
+    // 3. Delete cover image from Cloudinary
+    if (book.coverImage) {
+      const coverImagePublicId = getCloudinaryPublicId(book.coverImage, false);
+      if (coverImagePublicId) {
+        await cloudinary.uploader.destroy(coverImagePublicId).catch((err) => {
+          console.error("Failed to delete cover image from Cloudinary:", err);
+        });
+      }
+    }
+
+    // 4. Delete book file from Cloudinary
+    if (book.file) {
+      const bookFilePublicId = getCloudinaryPublicId(book.file, true);
+      if (bookFilePublicId) {
+        await cloudinary.uploader
+          .destroy(bookFilePublicId, { resource_type: "raw" })
+          .catch((err) => {
+            console.error("Failed to delete book file from Cloudinary:", err);
+          });
+      }
+    }
+
+    // 5. Delete from database
+    await BookModel.findByIdAndDelete(bookId);
+
+    res.status(204).json({
+      success: true,
+      message: "Book deleted successfully",
+      data: book,
+    });
+  } catch (error: any) {
+    next(createHttpError(500, error?.message));
+  }
+};
+
+export { createBook, updateBook, listBook, singleBook, deleteBook };

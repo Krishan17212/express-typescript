@@ -4,6 +4,7 @@ import {
   updateBook,
   listBook,
   singleBook,
+  deleteBook,
 } from "../controllers/bookController.js";
 import multer from "multer";
 import path from "node:path";
@@ -44,5 +45,7 @@ router.patch(
 router.get("/", listBook);
 
 router.get("/:bookId", singleBook);
+
+router.delete("/:bookId", authenticate, deleteBook);
 
 export default router;
