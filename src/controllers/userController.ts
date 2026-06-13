@@ -3,6 +3,7 @@ import createHttpError from "http-errors";
 import userModel from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import generateToken from "../middleware/tokenGenerate.js";
+import { config } from "../config/config.js";
 
 // Create user controller
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -86,7 +87,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
 const logout = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.clearCookie("jwt");
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      secure: config.nodeEnv === "production",
+      sameSite: "strict",
+      maxAge: 0,
+    });
     res.status(200).json({
       success: true,
       message: "User logged out successfully",
