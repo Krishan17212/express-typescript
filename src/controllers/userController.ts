@@ -5,7 +5,8 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
-      throw createHttpError(400, "All fields are required");
+      const error = createHttpError(400, "All fields are required");
+      return next(error);
     }
 
     res
