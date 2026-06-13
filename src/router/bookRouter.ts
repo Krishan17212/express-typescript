@@ -1,5 +1,5 @@
 import express from "express";
-import { createBook } from "../controllers/bookController.js";
+import { createBook, updateBook } from "../controllers/bookController.js";
 import multer from "multer";
 import path from "node:path";
 import authenticate from "../middleware/authenticate.js";
@@ -23,6 +23,17 @@ router.post(
     { name: "file", maxCount: 1 },
   ]),
   createBook,
+);
+
+// Update book
+router.patch(
+  "/:bookId",
+  authenticate,
+  upload.fields([
+    { name: "coverImage", maxCount: 1 },
+    { name: "file", maxCount: 1 },
+  ]),
+  updateBook,
 );
 
 export default router;

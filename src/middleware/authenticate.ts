@@ -4,10 +4,6 @@ import createHttpError from "http-errors";
 import { config } from "../config/config.js";
 import userModel from "../models/userModel.js";
 
-export interface AuthRequest extends Request {
-  userId: string;
-}
-
 const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -45,7 +41,7 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // 5. Attach userId to request object
-    (req as AuthRequest).userId = decoded.id;
+    req.userId = decoded.id;
     next();
   } catch (error: any) {
     next(createHttpError(401, "Invalid or expired authorization token"));
