@@ -82,4 +82,18 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createUser, login };
+// Logout controller
+
+const logout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.clearCookie("jwt");
+    res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
+    });
+  } catch (error: any) {
+    next(createHttpError(500, error?.message));
+  }
+};
+
+export { createUser, login, logout };
